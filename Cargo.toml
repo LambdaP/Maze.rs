@@ -1,0 +1,9 @@
+[package]
+
+name    = "mandala_maze"
+version = "0.0.1"
+authors = [ "Patrick Lambein <patrick@lambein.name>" ]
+
+[[bin]]
+
+name = "maze"
