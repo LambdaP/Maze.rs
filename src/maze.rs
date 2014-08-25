@@ -1,3 +1,7 @@
+#![warn(unstable)]
+
+use std::rand;
+
 #[allow(dead_code)]
 static grid_size : uint = 9;
 
@@ -162,20 +166,15 @@ impl Grid {
         }
     }
 
-//    fn commit_path (&mut self) {
-//        let color : Color = std::rand::random();
-//
-//        for cell in self.path_in_construction.iter() {
-//            match *cell {
-//                (x, y) => self.cells[x][y] = Path(color)
-//            }
-//        }
-//
-//        self.path_in_construction.clear();
-//    }
+    fn commit_path (&mut self) {
+        let color : Color = rand::random();
 
-}
+        for cell in self.path_in_construction.iter() {
+            match *cell {
+                ((x, y), _) => self.cells[x][y] = Path(color)
+            }
+        }
 
-fn main () {
-    println!("In progress.");
+        self.path_in_construction.clear();
+    }
 }
