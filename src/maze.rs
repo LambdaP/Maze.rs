@@ -7,15 +7,15 @@ static grid_size : uint = 9;
 
 type Coord = (uint, uint);
 
-#[deriving(PartialEq,Rand)]
-enum Color {
+#[deriving(PartialEq,Rand,Show)]
+enum Colour {
     White
 }
 
-#[deriving(PartialEq)]
+#[deriving(PartialEq,Show)]
 enum CellType {
     Wall,
-    Path(Color),
+    Path(Colour),
 }
 
 #[allow(dead_code)]
@@ -46,10 +46,10 @@ impl Grid {
 
         let (x, y) = coords;
 
-        if x > 1 {
+        if x > 0 {
             neighbours.push((x-1, y));
         }
-        if y > 1 {
+        if y > 0 {
             neighbours.push((x, y-1));
         }
         if x + 1 < grid_size {
@@ -97,7 +97,7 @@ impl Grid {
             }
         }
 
-        return count > 1;
+        return count > 0;
     }
 
     fn explorable_neighbours (&mut self, coords : Coord)
@@ -106,7 +106,7 @@ impl Grid {
         let mut explorable = Vec::with_capacity(4);
 
         for &cs in neighbours.iter() {
-            if self.at(cs) == Wall || self.near_path(cs) {
+            if self.in_path(cs) || self.near_path(cs) {
                 continue;
             }
 
@@ -154,7 +154,14 @@ impl Grid {
         self.new_path_origin(coords);
 
         loop {
-            let cs = *(self.path_in_construction[0].ref0());
+            let cs = {
+                let option_last = self.path_in_construction.last();
+
+                match option_last {
+                    Some(x) => *x.ref0(),
+                    None => fail!("Empty path.")
+                }
+            };
 
             if self.near_maze(cs) {
                 break;
@@ -167,7 +174,7 @@ impl Grid {
     }
 
     fn commit_path (&mut self) {
-        let color : Color = rand::random();
+        let color : Colour = rand::random();
 
         for cell in self.path_in_construction.iter() {
             match *cell {
@@ -177,4 +184,179 @@ impl Grid {
 
         self.path_in_construction.clear();
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Grid;
+
+    #[test]
+    fn test_at() {
+        let mut g = Grid::new();
+
+        assert_eq!(g.at((0,0)), super::Wall);
+    }
+
+    #[test]
+    fn test_collect_neighbours() {
+        let mut g = Grid::new();
+
+        {
+            let ns = g.collect_neighbours((0,0));
+
+            assert_eq!(ns.len(), 2);
+
+            {
+                let (x, y) = ns[0];
+                assert_eq!(x, 1);
+                assert_eq!(y, 0);
+            }
+
+            {
+                let (x, y) = ns[1];
+                assert_eq!(x, 0);
+                assert_eq!(y, 1);
+            }
+        }
+
+        {
+            let ns = g.collect_neighbours((1,1));
+
+            assert_eq!(ns.len(), 4);
+
+            {
+                let (x, y) = ns[0];
+                assert_eq!(x, 0);
+                assert_eq!(y, 1);
+            }
+
+            {
+                let (x, y) = ns[1];
+                assert_eq!(x, 1);
+                assert_eq!(y, 0);
+            }
+
+            {
+                let (x, y) = ns[2];
+                assert_eq!(x, 2);
+                assert_eq!(y, 1);
+            }
+
+            {
+                let (x, y) = ns[3];
+                assert_eq!(x, 1);
+                assert_eq!(y, 2);
+            }
+        }
+
+    }
+
+    #[test]
+    fn test_near_maze() {
+        let mut g = Grid::new();
+
+        g.cells[0][0] = super::Path(super::White);
+
+        assert!(g.near_maze((0,1)));
+        assert!(!g.near_maze((1,1)));
+    }
+
+    #[test]
+    fn test_in_path() {
+        let mut g = Grid::new();
+
+        let v = Vec::new();
+        g.path_in_construction.push(((0,0),v));
+
+        assert!(g.in_path((0,0)));
+        assert!(!g.in_path((1,1)));
+    }
+
+    #[test]
+    fn test_near_path() {
+        let mut g = Grid::new();
+
+        let v = Vec::new();
+        g.path_in_construction.push(((0,0),v));
+
+        assert!(g.near_path((1,0)));
+        assert!(!g.near_path((1,1)));
+    }
+
+    #[test]
+    fn test_explorable_neighbours() {
+        let mut g = Grid::new();
+
+        let v1 = Vec::new();
+        let v2 = Vec::new();
+        g.path_in_construction.push(((0,0),v1));
+        g.path_in_construction.push(((0,1),v2));
+
+        let ns = g.explorable_neighbours((1,1));
+
+        assert_eq!(ns.len(), 2);
+    }
+
+    #[test]
+    fn test_add_cell_to_path() {
+        let mut g = Grid::new();
+
+        let v1 = Vec::new();
+        let v2 = Vec::new();
+        g.path_in_construction.push(((0,0),v1));
+        g.path_in_construction.push(((0,1),v2));
+
+        assert_eq!(g.path_in_construction.len(), 2);
+
+        g.add_cell_to_path((1,1));
+
+        assert_eq!(g.path_in_construction.len(), 3);
+    }
+
+    #[test]
+    fn test_new_path_origin() {
+        let mut g = Grid::new();
+
+        assert_eq!(g.path_in_construction.len(), 0);
+
+        g.new_path_origin((0,0));
+        assert_eq!(g.path_in_construction.len(), 1);
+    }
+
+    #[test]
+    fn test_extend_path_1() {
+        let mut g = Grid::new();
+
+        g.new_path_origin((0,0));
+        g.extend_path();
+
+        assert_eq!(g.path_in_construction.len(), 2);
+
+        let cs = *(g.path_in_construction[1].ref0());
+
+        assert_eq!(cs.val0() + cs.val1(), 1);
+    }
+
+    #[test]
+    fn test_extend_path_2() {
+        let mut g = Grid::new();
+
+        let v1 = Vec::new();
+        g.path_in_construction.push(((0,0),v1));
+
+        assert!(!g.extend_path());
+    }
+
+
+    #[test]
+    fn test_new_path() {
+        let mut g = Grid::new();
+
+        g.cells[1][1] = super::Path(super::White);
+
+        g.new_path((0,0));
+
+        assert_eq!(g.path_in_construction.len(), 2);
+    }
+
 }
