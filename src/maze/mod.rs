@@ -1,46 +1,64 @@
 #![warn(unstable)]
-
 use std::rand;
+use std::collections::TreeSet;
 
 #[allow(dead_code)]
-static grid_size : uint = 9;
+static grid_size : uint = 16;
 
 type Coord = (uint, uint);
 
 #[deriving(PartialEq,Rand,Show)]
-enum Colour {
-    White
+enum Color {
+    White,
+    Red,
+    Green,
+    Blue,
+    Cyan,
+    Magenta,
+    Yellow,
+    Orange,
+    Pink,
+    Violet
 }
 
 #[deriving(PartialEq,Show)]
 enum CellType {
     Wall,
-    Path(Colour),
+    Path(Color),
 }
 
 #[allow(dead_code)]
-struct Grid {
+pub struct Grid {
     cells : [[CellType, ..grid_size], ..grid_size],
     path_in_construction : Vec<(Coord, Vec<Coord>)>,
+    clear_cells : TreeSet<Coord>,
 }
 
 #[allow(dead_code)]
 impl Grid {
-
-    fn new() -> Grid {
-        Grid {
+    pub fn new() -> Grid {
+        let mut g = Grid {
             cells : [[Wall, ..grid_size], ..grid_size],
-            path_in_construction : Vec::new()
+            path_in_construction : Vec::new(),
+            clear_cells : TreeSet::new(),
+        };
+
+        for x in range(0, grid_size) {
+            for y in range(0, grid_size) {
+                g.clear_cells.insert((x,y));
+            }
         }
+
+        return g;
     }
 
-    fn at (&mut self, coords : Coord) -> CellType {
+    fn at (&self, coords : Coord) -> CellType {
         match coords {
             (x, y) => self.cells[x][y]
         }
     }
 
-    fn collect_neighbours (&mut self, coords : Coord)
+    fn collect_neighbours (&self, coords : Coord)
                              -> Vec<(Coord)> {
         let mut neighbours = Vec::with_capacity(4);
 
@@ -62,7 +80,7 @@ impl Grid {
         return neighbours;
     }
 
-    fn near_maze (&mut self, coords : Coord) -> bool {
+    fn near_maze (&self, coords : Coord) -> bool {
         let neighbours = self.collect_neighbours(coords);
 
         for &cs in neighbours.iter() {
@@ -75,7 +93,7 @@ impl Grid {
         return false;
     }
 
-    fn in_path (&mut self, coords : Coord) -> bool {
+    fn in_path (&self, coords : Coord) -> bool {
         for cell in self.path_in_construction.iter() {
             match *cell {
                 (cs, _) if cs == coords => return true,
@@ -86,7 +104,7 @@ impl Grid {
         return false;
     }
 
-    fn near_path (&mut self, coords : Coord) -> bool {
+    fn near_path (&self, coords : Coord) -> bool {
         let neighbours = self.collect_neighbours(coords);
 
         let mut count : int = 0;
@@ -100,13 +118,30 @@ impl Grid {
         return count > 0;
     }
 
+    fn near_several_maze (&self, coords : Coord) -> bool {
+        let neighbours = self.collect_neighbours(coords);
+
+        let mut count : int = 0;
+
+        for &cs in neighbours.iter() {
+            match self.at(cs) {
+                Wall => continue,
+                _    => count += 1
+            }
+        }
+
+        return count > 1;
+    }
+
     fn explorable_neighbours (&mut self, coords : Coord)
                                      -> Vec<Coord> {
         let neighbours = self.collect_neighbours(coords);
         let mut explorable = Vec::with_capacity(4);
 
         for &cs in neighbours.iter() {
-            if self.in_path(cs) || self.near_path(cs) {
+            if self.in_path(cs)
+                || self.near_path(cs)
+                /* || self.near_several_maze(cs) */ {
                 continue;
             }
 
@@ -116,8 +151,18 @@ impl Grid {
         return explorable;
     }
 
+    fn randab (a : uint, b : uint) -> uint {
+        a + (rand::random::<uint>() % (b - a))
+    }
+
     fn select_at_random<T> (leads : &mut Vec<T>) -> Option<T> {
-        leads.pop() // TODO: do something more random.
+        let l = leads.len();
+
+        if l == 0 {
+            return None;
+        }
+
+        leads.remove(Grid::randab(0, l))
     }
 
     fn add_cell_to_path(&mut self, coords : Coord) {
@@ -126,10 +171,22 @@ impl Grid {
         self.path_in_construction.push((coords, ns));
     }
 
+    fn print_path (&self) {
+        print!("[");
+        for cell in self.path_in_construction.iter() {
+            match *cell {
+                ((x,y), _) => print!("({},{});", x, y)
+            }
+        }
+        println!("]");
+    }
+
     fn extend_path (&mut self) -> bool {
+        let l = self.path_in_construction.len() - 1;
+
         let option_new_cell =
             Grid::select_at_random(self.path_in_construction
-                                       .get_mut(0)
+                                       .get_mut(l)
                                        .mut1());
 
         match option_new_cell {
@@ -173,8 +230,25 @@ impl Grid {
         }
     }
 
-    fn commit_path (&mut self) {
-        let color : Colour = rand::random();
+    fn update_clear_cells (&mut self) {
+        for cell in self.path_in_construction.iter() {
+            match *cell {
+                (cs, _) => {
+                    self.clear_cells.remove(&cs);
+                    let ns = self.collect_neighbours(cs);
+                    for c in ns.iter() {
+                        self.clear_cells.remove(c);
+                    }
+                }
+            }
+        }
+    }
+
+    fn commit_path (&mut self, optionColor : Option<Color>) {
+        let color : Color = match optionColor {
+            None => rand::random(),
+            Some(x) => x,
+        };
 
         for cell in self.path_in_construction.iter() {
             match *cell {
@@ -182,7 +256,68 @@ impl Grid {
             }
         }
 
+        self.update_clear_cells();
+
         self.path_in_construction.clear();
+
+        print!("."); // DEBUG
+    }
+
+    fn new_random_origin (&self) -> Coord {
+        let l = self.clear_cells.len();
+        let ri = Grid::randab(0, l);
+        match self.clear_cells.iter().skip(ri).next() {
+            None => fail!("Could not pick new origin."),
+            Some(x) => *x
+        }
+    }
+
+    fn set_origin (&mut self, coord : Coord) {
+        self.new_path_origin(coord);
+        self.commit_path(Some(White));
+    }
+
+    pub fn run (&mut self) {
+        self.set_origin((0,0));
+
+        while !self.clear_cells.is_empty() {
+            let cs = self.new_random_origin();
+            self.new_path(cs);
+            self.commit_path(None);
+        }
+
+        println!("");
+
+        self.ugly_print();
+
+    }
+
+    fn cell_rep (c : CellType) -> char {
+        match c {
+            Wall => '.',
+            Path(x) => match x {
+                White    => '0',
+                Red      => '1',
+                Green    => '2',
+                Blue     => '3',
+                Cyan     => '4',
+                Magenta  => '5',
+                Yellow   => '6',
+                Orange   => '7',
+                Pink     => '8',
+                Violet   => '9',
+            }
+        }
+    }
+
+    fn ugly_print (&self) {
+
+        for i in range(0, grid_size) {
+            for j in range(0, grid_size) {
+                print!("{}", Grid::cell_rep(self.cells[i][j]));
+            }
+            println!("");
+        }
     }
 }
 
@@ -347,7 +482,6 @@ mod test {
         assert!(!g.extend_path());
     }
 
-
     #[test]
     fn test_new_path() {
         let mut g = Grid::new();
@@ -359,4 +493,35 @@ mod test {
         assert_eq!(g.path_in_construction.len(), 2);
     }
 
+    #[test]
+    fn test_update_clear_cells() {
+        let mut g = Grid::new();
+
+        g.new_path_origin((0,0));
+
+        assert!(g.clear_cells.contains(&(0,0)));
+        assert!(g.clear_cells.contains(&(0,1)));
+        assert!(g.clear_cells.contains(&(1,0)));
+
+        g.update_clear_cells();
+
+        assert!(!g.clear_cells.contains(&(0,0)));
+        assert!(!g.clear_cells.contains(&(0,1)));
+        assert!(!g.clear_cells.contains(&(1,0)));
+    }
+
+    #[test]
+    fn test_commit_path() {
+        let mut g = Grid::new();
+
+        g.cells[1][1] = super::Path(super::White);
+
+        g.add_cell_to_path((0,0));
+        g.add_cell_to_path((0,1));
+
+        g.commit_path(None);
+
+        assert_eq!(g.cells[0][0], super::Path(super::White));
+        assert_eq!(g.cells[0][1], super::Path(super::White));
+    }
 }

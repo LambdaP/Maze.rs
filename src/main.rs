@@ -1,6 +1,6 @@
 pub mod maze;
 
-#[allow(dead_code)]
 fn main () {
-    println!("In progress.");
+    let mut g = maze::Grid::new();
+    g.run();
 }

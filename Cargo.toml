@@ -1,6 +1,6 @@
 [package]
 
-name    = "mandala_maze"
+name    = "maze"
 version = "0.0.1"
 authors = [ "Patrick Lambein <patrick@lambein.name>" ]
 
