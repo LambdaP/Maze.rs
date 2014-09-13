@@ -1,24 +1,9 @@
 use std::rand;
 use std::collections::TreeSet;
 
-#[allow(dead_code)]
 static grid_size : uint = 9;
 
 type Coord = (uint, uint);
-
-#[deriving(PartialEq,Rand,Show)]
-enum Color {
-    White,
-    Red,
-    Green,
-    Blue,
-    Cyan,
-    Magenta,
-    Yellow,
-    Orange,
-    Pink,
-    Violet
-}
 
 #[deriving(PartialEq,Show)]
 enum CellType {
@@ -26,7 +11,6 @@ enum CellType {
     Path(uint),
 }
 
-#[allow(dead_code)]
 pub struct Grid {
     cells                : [[CellType, ..grid_size], ..grid_size],
     path_in_construction : Vec<(Coord, Vec<Coord>)>,
@@ -34,7 +18,6 @@ pub struct Grid {
     npath                : uint,
 }
 
-#[allow(dead_code)]
 impl Grid {
     pub fn new() -> Grid {
         let mut g = Grid {
@@ -204,16 +187,6 @@ impl Grid {
         let ns = self.explorable_neighbours(coords);
 
         self.path_in_construction.push((coords, ns));
-    }
-
-    fn print_path (&self) {
-        print!("[");
-        for cell in self.path_in_construction.iter() {
-            match *cell {
-                ((x,y), _) => print!("({},{});", x, y)
-            }
-        }
-        println!("]");
     }
 
     fn extend_path (&mut self) -> bool {
