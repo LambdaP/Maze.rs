@@ -117,6 +117,26 @@ impl Grid {
         return count > 1;
     }
 
+    fn near_corner (&self, coords : Coord) -> bool {
+        let (x,y) = coords;
+
+        let left = x > 0 && self.at((x-1,y)) != Wall;
+        let right = x + 1 < grid_size && self.at((x+1,y)) != Wall;
+        let up = y > 0 && self.at((x,y-1)) != Wall;
+        let down = y + 1 < grid_size && self.at((x,y+1)) != Wall;
+
+        (right && up)
+            || (up && left)
+            || (left && down)
+            || (down && right)
+    }
+
+    fn valid_move (&self, cs : Coord) -> bool {
+           !(self.near_path(cs)
+            || self.in_path(cs)
+            || self.near_corner(cs))
+    }
+
     fn cjm (&self, origin : Coord, connex : &mut TreeSet<Coord>) -> bool {
         if self.near_maze(origin) {
             return true;
@@ -127,15 +147,7 @@ impl Grid {
         // Scan as far as you can.
         for &cs in neighbours.iter() {
             if connex.insert(cs) {
-
-                // Don't cross the path.
-                if self.near_path(cs)
-                    || self.in_path(cs) {
-                    continue;
-                }
-
-                // Explore recursively.
-                if self.cjm(cs, connex) {
+                if self.valid_move(cs) && self.cjm(cs, connex) {
                     return true;
                 }
             }
@@ -157,13 +169,9 @@ impl Grid {
         let mut explorable = Vec::with_capacity(4);
 
         for &cs in neighbours.iter() {
-            if self.in_path(cs)
-                || self.near_path(cs)
-                /* || self.near_several_maze(cs) */ {
-                continue;
+            if self.valid_move(cs) {
+                explorable.push(cs);
             }
-
-            explorable.push(cs);
         }
 
         return explorable;
