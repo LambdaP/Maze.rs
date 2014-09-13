@@ -1,7 +1,8 @@
 use std::rand;
 use std::collections::TreeSet;
 
-static grid_size : uint = 9;
+static grid_radius : uint = 2;
+static grid_size : uint = 1 + 2 * grid_radius;
 
 type Coord = (uint, uint);
 
@@ -192,9 +193,12 @@ impl Grid {
     }
 
     fn add_cell_to_path(&mut self, coords : Coord) {
-        let ns = self.explorable_neighbours(coords);
+        let cl = |cs| {
+        let ns = self.explorable_neighbours(cs);
+        self.path_in_construction.push((cs, ns));
+        };
 
-        self.path_in_construction.push((coords, ns));
+        Grid::do_symmetric(coords, cl);
     }
 
     fn extend_path (&mut self) -> bool {
@@ -251,7 +255,66 @@ impl Grid {
         self.path_in_construction.push((coords, neighbours));
     }
 
+    fn do_symmetric<T> (coords : Coord, cl : |Coord| -> T)
+                            -> Vec<T> {
+        if coords == (0,0) {
+            let v = cl((0,0));
+            let mut ret = Vec::with_capacity(1);
+            ret.push(v);
+            return ret;
+        }
+
+        let vec4 = {
+            match coords {
+                (xx,yy) => {
+
+                    // Work in the centered referential.
+                    let mut x : int = (xx as int) - (grid_radius as int);
+                    let mut y : int = (yy as int) - (grid_radius as int);
+
+                    // Put yourself in the first quadrant.
+                    if x < 0 {
+                        if y >= 0 {
+                            let z = x;
+                            x = y;
+                            y = -z;
+                        } else {
+                            x = -x;
+                            y = -y;
+                        }
+                    } else {
+                        if y < 0 {
+                            let z = x;
+                            x = -y;
+                            y = z;
+                        }
+                    }
+
+                    let p0 = ((x as uint) + grid_radius,
+                              (y as uint) + grid_radius);
+                    let p1 = (grid_radius - (y as uint),
+                             (x as uint) + grid_radius);
+                    let p2 = (grid_radius - (x as uint),
+                              grid_radius - (y as uint));
+                    let p3 = ((y as uint) + grid_radius,
+                              grid_radius - (x as uint));
+                    vec![p0, p1, p2, p3]
+                }
+            }
+        };
+
+        let mut v = Vec::with_capacity(4);
+        for cs in vec4.iter() {
+            v.push(cl(*cs));
+        }
+
+        return v;
+    }
+
     fn backtrack (&mut self) {
+        self.path_in_construction.pop();
+        self.path_in_construction.pop();
+        self.path_in_construction.pop();
         self.path_in_construction.pop();
     }
 
@@ -323,7 +386,7 @@ impl Grid {
     }
 
     pub fn run (&mut self) {
-        self.set_origin((0,0));
+        self.set_origin((grid_radius, grid_radius));
 
         while !self.clear_cells.is_empty() {
             let cs = self.new_random_origin();
