@@ -2,7 +2,7 @@ use std::rand;
 use std::collections::TreeSet;
 
 #[allow(dead_code)]
-static grid_size : uint = 60;
+static grid_size : uint = 9;
 
 type Coord = (uint, uint);
 
@@ -304,7 +304,9 @@ impl Grid {
                     self.clear_cells.remove(&cs);
                     let ns = self.collect_neighbours(cs);
                     for c in ns.iter() {
-                        self.clear_cells.remove(c);
+                        if self.near_several_maze(*c) {
+                            self.clear_cells.remove(c);
+                        }
                     }
                 }
             }
@@ -312,13 +314,13 @@ impl Grid {
     }
 
     fn commit_path (&mut self) {
-        self.npath += 1;
-
         for cell in self.path_in_construction.iter() {
             match *cell {
                 ((x, y), _) => self.cells[x][y] = Path(self.npath)
             }
         }
+
+        self.npath += 1;
 
         self.update_clear_cells();
 
