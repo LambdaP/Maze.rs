@@ -1,7 +1,7 @@
 use std::rand;
 use std::collections::TreeSet;
 
-static grid_radius : uint = 2;
+static grid_radius : uint = 4;
 static grid_size : uint = 1 + 2 * grid_radius;
 
 type Coord = (uint, uint);
@@ -194,8 +194,8 @@ impl Grid {
 
     fn add_cell_to_path(&mut self, coords : Coord) {
         let cl = |cs| {
-        let ns = self.explorable_neighbours(cs);
-        self.path_in_construction.push((cs, ns));
+            let ns = self.explorable_neighbours(cs);
+            self.path_in_construction.push((cs, ns));
         };
 
         Grid::do_symmetric(coords, cl);
@@ -250,9 +250,12 @@ impl Grid {
     }
 
     fn new_path_origin (&mut self, coords : Coord) {
-        let neighbours = self.collect_neighbours(coords);
+        let cl = |cs| {
+            let neighbours = self.collect_neighbours(cs);
+            self.path_in_construction.push((cs, neighbours));
+        };
 
-        self.path_in_construction.push((coords, neighbours));
+        Grid::do_symmetric(coords, cl);
     }
 
     fn do_symmetric<T> (coords : Coord, cl : |Coord| -> T)
