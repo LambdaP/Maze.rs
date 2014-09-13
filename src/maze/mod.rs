@@ -1,9 +1,8 @@
-#![warn(unstable)]
 use std::rand;
 use std::collections::TreeSet;
 
 #[allow(dead_code)]
-static grid_size : uint = 16;
+static grid_size : uint = 60;
 
 type Coord = (uint, uint);
 
@@ -134,23 +133,19 @@ impl Grid {
     }
 
     fn cjm (&self, origin : Coord, connex : &mut TreeSet<Coord>) -> bool {
-        let neighbours = self.collect_neighbours(origin);
-
-        // If touching the maze, report success.
-        for &cs in neighbours.iter() {
-            match self.at(cs) {
-                Wall => continue,
-                _    => return true
-            }
+        if self.near_maze(origin) {
+            return true;
         }
+
+        let neighbours = self.collect_neighbours(origin);
 
         // Scan as far as you can.
         for &cs in neighbours.iter() {
             if connex.insert(cs) {
 
                 // Don't cross the path.
-                if self.in_path(cs)
-                    || self.near_path(cs) {
+                if self.near_path(cs)
+                    || self.in_path(cs) {
                     continue;
                 }
 
@@ -220,47 +215,49 @@ impl Grid {
     }
 
     fn extend_path (&mut self) -> bool {
-        let mut expl = {
-            let mut option_last = self.path_in_construction.mut_last();
+        let option_new_cell = {
+            let mut rem0 = false;
+            let mut rem1 = false;
 
-            let mut expl = match option_last {
-                Some(x) => (*x).mut1(),
-                None => fail!("Empty path.")
-            };
+            { // Test for connexity with the maze.
+                let expl = match self.path_in_construction.last() {
+                    Some(x) => (*x).ref1(),
+                    None    => fail!("Empty path.")
+                };
 
-            { // DEBUG
-                print!("Free: [");
-                for cs in expl.iter() {
-                    match *cs {
-                        (x,y) => print!("({},{});", x, y)
+                if expl.len() == 2 {
+                    if !self.can_join_maze(expl[0]) {
+                        rem0 = true;
+                    }
+                    if !self.can_join_maze(expl[1]) {
+                        rem1 = true;
                     }
                 }
-                println!("]");
             }
 
-            // Test for connexity with the maze.
-            if expl.len() == 2 {
-                println!("HELLO IM WORKING");
-                if !self.can_join_maze(*expl.get(0)) {
-                    expl.remove(0);
-                } else if !self.can_join_maze(*expl.get(1)) {
+            let expl = match self.path_in_construction.mut_last(){
+                    Some(x) => (*x).mut1(),
+                    None => fail!("Empty path.")
+                };
+
+            if rem0 {
+                if rem1 {
                     expl.remove(1);
                 }
+                expl.remove(0);
             }
 
-            expl
-        };
+            if rem1 {
+                expl.remove(1);
+            }
 
-        let option_new_cell = Grid::select_at_random(expl);
+            Grid::select_at_random(expl)
+        };
 
         match option_new_cell {
             Some(cs) => self.add_cell_to_path(cs),
             None        => return false
         }
-
-        print!("Path: "); // DEBUG
-        self.print_path(); // DEBUG
-        println!("");
 
         return true;
     }
@@ -288,12 +285,7 @@ impl Grid {
                 }
             };
 
-            match cs { // DEBUG
-                (x,y) => println!("Cell: ({},{})", x, y)
-            }
-
             if self.near_maze(cs) {
-                println!("TOUCHED MAZE YAY"); // DEBUG
                 break;
             }
 
@@ -355,11 +347,7 @@ impl Grid {
             let cs = self.new_random_origin();
             self.new_path(cs);
             self.commit_path(None);
-
-            print!("."); // DEBUG
         }
-
-        println!("");
 
         self.ugly_print();
 
