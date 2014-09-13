@@ -23,14 +23,15 @@ enum Color {
 #[deriving(PartialEq,Show)]
 enum CellType {
     Wall,
-    Path(Color),
+    Path(uint),
 }
 
 #[allow(dead_code)]
 pub struct Grid {
-    cells : [[CellType, ..grid_size], ..grid_size],
+    cells                : [[CellType, ..grid_size], ..grid_size],
     path_in_construction : Vec<(Coord, Vec<Coord>)>,
-    clear_cells : TreeSet<Coord>,
+    clear_cells          : TreeSet<Coord>,
+    npath                : uint,
 }
 
 #[allow(dead_code)]
@@ -40,6 +41,7 @@ impl Grid {
             cells : [[Wall, ..grid_size], ..grid_size],
             path_in_construction : Vec::new(),
             clear_cells : TreeSet::new(),
+            npath : 0,
         };
 
         for x in range(0, grid_size) {
@@ -309,15 +311,12 @@ impl Grid {
         }
     }
 
-    fn commit_path (&mut self, optionColor : Option<Color>) {
-        let color : Color = match optionColor {
-            None => rand::random(),
-            Some(x) => x,
-        };
+    fn commit_path (&mut self) {
+        self.npath += 1;
 
         for cell in self.path_in_construction.iter() {
             match *cell {
-                ((x, y), _) => self.cells[x][y] = Path(color)
+                ((x, y), _) => self.cells[x][y] = Path(self.npath)
             }
         }
 
@@ -337,7 +336,7 @@ impl Grid {
 
     fn set_origin (&mut self, coord : Coord) {
         self.new_path_origin(coord);
-        self.commit_path(Some(White));
+        self.commit_path();
     }
 
     pub fn run (&mut self) {
@@ -346,28 +345,41 @@ impl Grid {
         while !self.clear_cells.is_empty() {
             let cs = self.new_random_origin();
             self.new_path(cs);
-            self.commit_path(None);
+            self.commit_path();
         }
 
         self.ugly_print();
 
     }
 
+    fn hexchar (u : uint) -> char {
+        let v = u % 16;
+
+        match v {
+            0 => '0',
+            1 => '1',
+            2 => '2',
+            3 => '3',
+            4 => '4',
+            5 => '5',
+            6 => '6',
+            7 => '7',
+            8 => '8',
+            9 => '9',
+            10 => 'a',
+            11 => 'b',
+            12 => 'c',
+            13 => 'd',
+            14 => 'e',
+            15 => 'f',
+            _  => '?',
+        }
+    }
+
     fn cell_rep (c : CellType) -> char {
         match c {
             Wall => '.',
-            Path(x) => match x {
-                White    => '0',
-                Red      => '1',
-                Green    => '2',
-                Blue     => '3',
-                Cyan     => '4',
-                Magenta  => '5',
-                Yellow   => '6',
-                Orange   => '7',
-                Pink     => '8',
-                Violet   => '9',
-            }
+            Path(x) => Grid::hexchar(x),
         }
     }
 
@@ -580,7 +592,7 @@ mod test {
         g.add_cell_to_path((0,0));
         g.add_cell_to_path((0,1));
 
-        g.commit_path(None);
+        g.commit_path();
 
         assert_eq!(g.cells[0][0], super::Path(super::White));
         assert_eq!(g.cells[0][1], super::Path(super::White));
