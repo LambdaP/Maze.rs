@@ -1,26 +1,26 @@
 use std::rand;
 use std::collections::TreeSet;
 
-static grid_radius : uint = 4;
-static grid_size : uint = 1 + 2 * grid_radius;
+pub static grid_radius : uint = 30;
+pub static grid_size : uint = 1 + 2 * grid_radius;
 
 type Coord = (uint, uint);
 
 #[deriving(PartialEq,Show)]
-enum CellType {
+pub enum CellType {
     Wall,
     Path(uint),
 }
 
 pub struct Grid {
-    cells                : [[CellType, ..grid_size], ..grid_size],
+    pub cells            : [[CellType, ..grid_size], ..grid_size],
     path_in_construction : Vec<(Coord, Vec<Coord>)>,
     clear_cells          : TreeSet<Coord>,
-    npath                : uint,
+    pub npath            : uint,
 }
 
 impl Grid {
-    pub fn new() -> Grid {
+    pub fn new () -> Grid {
         let mut g = Grid {
             cells : [[Wall, ..grid_size], ..grid_size],
             path_in_construction : Vec::new(),
@@ -222,7 +222,7 @@ impl Grid {
                 }
             }
 
-            let expl = match self.path_in_construction.mut_last(){
+            let expl = match self.path_in_construction.last_mut(){
                     Some(x) => (*x).mut1(),
                     None => fail!("Empty path.")
                 };
@@ -396,51 +396,48 @@ impl Grid {
             self.new_path(cs);
             self.commit_path();
         }
-
-        self.ugly_print();
-
     }
 
-    fn hexchar (u : uint) -> char {
-        let v = u % 16;
-
-        match v {
-            0 => '0',
-            1 => '1',
-            2 => '2',
-            3 => '3',
-            4 => '4',
-            5 => '5',
-            6 => '6',
-            7 => '7',
-            8 => '8',
-            9 => '9',
-            10 => 'a',
-            11 => 'b',
-            12 => 'c',
-            13 => 'd',
-            14 => 'e',
-            15 => 'f',
-            _  => '?',
-        }
-    }
-
-    fn cell_rep (c : CellType) -> char {
-        match c {
-            Wall => '.',
-            Path(x) => Grid::hexchar(x),
-        }
-    }
-
-    fn ugly_print (&self) {
-
-        for i in range(0, grid_size) {
-            for j in range(0, grid_size) {
-                print!("{}", Grid::cell_rep(self.cells[i][j]));
-            }
-            println!("");
-        }
-    }
+//    fn hexchar (u : uint) -> char {
+//        let v = u % 16;
+//
+//        match v {
+//            0 => '0',
+//            1 => '1',
+//            2 => '2',
+//            3 => '3',
+//            4 => '4',
+//            5 => '5',
+//            6 => '6',
+//            7 => '7',
+//            8 => '8',
+//            9 => '9',
+//            10 => 'a',
+//            11 => 'b',
+//            12 => 'c',
+//            13 => 'd',
+//            14 => 'e',
+//            15 => 'f',
+//            _  => '?',
+//        }
+//    }
+//
+//    fn cell_rep (c : CellType) -> char {
+//        match c {
+//            Wall => '.',
+//            Path(x) => Grid::hexchar(x),
+//        }
+//    }
+//
+//    pub fn ugly_print (&self) {
+//
+//        for i in range(0, grid_size) {
+//            for j in range(0, grid_size) {
+//                print!("{}", Grid::cell_rep(self.cells[i][j]));
+//            }
+//            println!("");
+//        }
+//    }
 }
 
 #[cfg(test)]

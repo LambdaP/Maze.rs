@@ -7,3 +7,7 @@ authors = [ "Patrick Lambein <patrick@lambein.name>" ]
 [[bin]]
 
 name = "maze"
+
+[dependencies.image]
+
+git = "https://github.com/PistonDevelopers/rust-image"
