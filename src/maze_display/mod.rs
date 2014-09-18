@@ -39,11 +39,51 @@ enum Color {
     Crayola
 }
 
+impl Color {
+    pub fn to_rgb (&self) -> Rgb<u8> {
+        match *self {
+            Lime => Rgb(118,210,0),
+            Pacific => Rgb(23,174,166),
+            Purple => Rgb(131,21,104),
+            Stonewall => Rgb(221,33,13),
+            Zinger => Rgb(191,238,74),
+            Pumpkin => Rgb(231,126,62),
+            Tareum => Rgb(95,84,142),
+            Candy => Rgb(248,160,152),
+            Passion => Rgb(192,31,49),
+            Rower => Rgb(11,76,134),
+            Uruguayans => Rgb(126,12,93),
+            Pool => Rgb(98,234,200),
+            Ariel => Rgb(38,143,171),
+            Knickers => Rgb(247,93,108),
+            Hotpink => Rgb(194,33,132),
+            Warmth => Rgb(254,139,54),
+            Wasabi => Rgb(132,226,49),
+            Yogi => Rgb(248,84,17),
+            Poison => Rgb(194,26,3),
+            Lipstick  => Rgb(182,33,69),
+            Bordello  => Rgb(219,73,138),
+            Turquoise => Rgb(17,182,223),
+            Crayola => Rgb(24,148,196),
+        }
+    }
+}
+
 #[deriving(PartialEq)]
 enum CellColor {
     White,
     Black,
     C(Color),
+}
+
+impl CellColor {
+    pub fn to_rgb (&self) -> Rgb<u8> {
+        match *self {
+            White => Rgb(253,251,249),
+            Black => Rgb(17,41,58),
+            C(x)  => x.to_rgb(),
+        }
+    }
 }
 
 pub struct ColoredGrid {
@@ -77,57 +117,31 @@ impl ColoredGrid {
         cg
     }
 
-    pub fn ugly_print (&self) {
-        for i in range(0, grid_size) {
-            for j in range(0, grid_size) {
-                let c = match self.cells[i][j] {
-                    White => 'O',
-                    Black => '.',
-                    C(x)  => match x {
-                        Red   => 'R',
-                        Green => 'G',
-                        Blue  => 'B',
-                    },
-                };
-                print!("{}", c);
-            }
-            println!("");
-        }
-    }
+//    pub fn ugly_print (&self) {
+//        for i in range(0, grid_size) {
+//            for j in range(0, grid_size) {
+//                let c = match self.cells[i][j] {
+//                    White => 'O',
+//                    Black => '.',
+//                    C(x)  => match x {
+//                        Red   => 'R',
+//                        Green => 'G',
+//                        Blue  => 'B',
+//                    },
+//                };
+//                print!("{}", c);
+//            }
+//            println!("");
+//        }
+//    }
 
     pub fn gen_img (&self) {
         let image_size : u32 = (square_size * grid_size) as u32;
         let cl = |x : u32, y : u32| {
-            match self.cells[(x / 10) as uint][(y / 10) as uint] {
-                White => Rgb(253,251,249),
-                Black => Rgb(17,41,58),
-                C(x)  => match x {
-                    Lime => Rgb(118,210,0),
-                    Pacific => Rgb(23,174,166),
-                    Purple => Rgb(131,21,104),
-                    Stonewall => Rgb(221,33,13),
-                    Zinger => Rgb(191,238,74),
-                    Pumpkin => Rgb(231,126,62),
-                    Tareum => Rgb(95,84,142),
-                    Candy => Rgb(248,160,152),
-                    Passion => Rgb(192,31,49),
-                    Rower => Rgb(11,76,134),
-                    Uruguayans => Rgb(126,12,93),
-                    Pool => Rgb(98,234,200),
-                    Ariel => Rgb(38,143,171),
-                    Knickers => Rgb(247,93,108),
-                    Hotpink => Rgb(194,33,132),
-                    Warmth => Rgb(254,139,54),
-                    Wasabi => Rgb(132,226,49),
-                    Yogi => Rgb(248,84,17),
-                    Poison => Rgb(194,26,3),
-                    Lipstick  => Rgb(182,33,69),
-                    Bordello  => Rgb(219,73,138),
-                    Turquoise => Rgb(17,182,223),
-                    Crayola => Rgb(24,148,196)
-                },
-            }
+            let cc = self.cells[(x / 10) as uint][(y / 10) as uint];
+            cc.to_rgb()
         };
+
         let img : ImageBuf<Rgb<u8>> =
             ImageBuf::from_fn(image_size, image_size, cl);
 
