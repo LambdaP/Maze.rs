@@ -14,9 +14,29 @@ static grid_size : uint = maze::grid_size;
 
 #[deriving(PartialEq,Rand,Show)]
 enum Color {
-    Red,
-    Green,
-    Blue,
+    Lime,
+    Pacific,
+    Purple,
+    Stonewall,
+    Zinger,
+    Pumpkin,
+    Tareum,
+    Candy,
+    Passion,
+    Rower,
+    Uruguayans,
+    Pool,
+    Ariel,
+    Knickers,
+    Hotpink,
+    Warmth,
+    Wasabi,
+    Yogi,
+    Poison,
+    Lipstick,
+    Bordello,
+    Turquoise,
+    Crayola
 }
 
 #[deriving(PartialEq)]
@@ -79,12 +99,32 @@ impl ColoredGrid {
         let image_size : u32 = (square_size * grid_size) as u32;
         let cl = |x : u32, y : u32| {
             match self.cells[(x / 10) as uint][(y / 10) as uint] {
-                White => Rgb(255,255,255),
-                Black => Rgb(0,0,0),
+                White => Rgb(253,251,249),
+                Black => Rgb(17,41,58),
                 C(x)  => match x {
-                    Red   => Rgb(255,0,0),
-                    Green => Rgb(0,255,0),
-                    Blue  => Rgb(0,0,255)
+                    Lime => Rgb(118,210,0),
+                    Pacific => Rgb(23,174,166),
+                    Purple => Rgb(131,21,104),
+                    Stonewall => Rgb(221,33,13),
+                    Zinger => Rgb(191,238,74),
+                    Pumpkin => Rgb(231,126,62),
+                    Tareum => Rgb(95,84,142),
+                    Candy => Rgb(248,160,152),
+                    Passion => Rgb(192,31,49),
+                    Rower => Rgb(11,76,134),
+                    Uruguayans => Rgb(126,12,93),
+                    Pool => Rgb(98,234,200),
+                    Ariel => Rgb(38,143,171),
+                    Knickers => Rgb(247,93,108),
+                    Hotpink => Rgb(194,33,132),
+                    Warmth => Rgb(254,139,54),
+                    Wasabi => Rgb(132,226,49),
+                    Yogi => Rgb(248,84,17),
+                    Poison => Rgb(194,26,3),
+                    Lipstick  => Rgb(182,33,69),
+                    Bordello  => Rgb(219,73,138),
+                    Turquoise => Rgb(17,182,223),
+                    Crayola => Rgb(24,148,196)
                 },
             }
         };
